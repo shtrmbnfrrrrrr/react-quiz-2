@@ -440,6 +440,10 @@ body.dark .add-btn {
   animation: fadeIn 0.3s ease-in;
 }
 
+.undo-slot {
+  padding: 2px 0px;
+}
+
 .progress-circle {
   position: relative;
   width: 24px;

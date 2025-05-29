@@ -10,8 +10,7 @@ const TodoList = () => {
   const [noteToEdit, setNoteToEdit] = useState(null);
   const [filter, setFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [recentlyDeleted, setRecentlyDeleted] = useState(null);
-  const [undoTimer, setUndoTimer] = useState(null);
+  const [recentlyDeleted, setRecentlyDeleted] = useState([]);
 
   const toggleComplete = (id) => {
     setNotes((prev) =>
@@ -31,25 +30,27 @@ const TodoList = () => {
 
     const timer = setTimeout(() => {
       setNotes((prev) => prev.filter((n) => n.id !== id));
-      setRecentlyDeleted(null);
-    }, 3000);
+      setRecentlyDeleted((prev) =>
+        prev.filter((entry) => entry.note.id !== id)
+      );
+    }, 30000);
 
-    setRecentlyDeleted({ note, index });
-    setUndoTimer(timer);
+    setRecentlyDeleted((prev) => [...prev, { note, index, timer }]);
   };
 
-  const handleUndo = () => {
-    if (recentlyDeleted) {
-      setNotes((prev) =>
-        prev.map((note) =>
-          note.id === recentlyDeleted.note.id
-            ? { ...note, deleting: false }
-            : note
-        )
-      );
-      clearTimeout(undoTimer);
-      setRecentlyDeleted(null);
-    }
+  const handleUndo = (id) => {
+    const entry = recentlyDeleted.find((entry) => entry.note.id === id);
+    if (!entry) return;
+
+    clearTimeout(entry.timer);
+
+    setNotes((prev) =>
+      prev.map((note) =>
+        note.id === entry.note.id ? { ...note, deleting: false } : note
+      )
+    );
+
+    setRecentlyDeleted((prev) => prev.filter((entry) => entry.note.id !== id));
   };
 
   const addNote = (text) => {
@@ -120,7 +121,7 @@ const TodoList = () => {
           />
         )}
 
-        {filteredNotes.length === 0 && !recentlyDeleted ? (
+        {filteredNotes.length === 0 && recentlyDeleted.length === 0 ? (
           <div className="no-notes">
             <img
               src="noNotes.png"
@@ -136,18 +137,20 @@ const TodoList = () => {
           </div>
         ) : (
           <ul className="notes-list">
-            {filteredNotes.map(({ note, index }) => {
-              const originalIndex = notes.findIndex((n) => n.id === note.id);
-              const shouldShowUndo =
-                recentlyDeleted && recentlyDeleted.index === originalIndex;
+            {notes.map((note, index) => {
+              const undoEntry = recentlyDeleted.find(
+                (entry) => entry.index === index
+              );
 
-              if (shouldShowUndo) {
+              if (undoEntry) {
                 return (
-                  <li key="undo" className="undo-slot">
-                    <UndoButton onUndo={handleUndo} />
+                  <li key={`undo-${undoEntry.note.id}`} className="undo-slot">
+                    <UndoButton onUndo={() => handleUndo(undoEntry.note.id)} />
                   </li>
                 );
               }
+
+              if (note.deleting) return null;
 
               return (
                 <NoteCell
