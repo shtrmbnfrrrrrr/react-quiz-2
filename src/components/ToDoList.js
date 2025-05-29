@@ -33,7 +33,7 @@ const TodoList = () => {
       setRecentlyDeleted((prev) =>
         prev.filter((entry) => entry.note.id !== id)
       );
-    }, 30000);
+    }, 3000);
 
     setRecentlyDeleted((prev) => [...prev, { note, index, timer }]);
   };
